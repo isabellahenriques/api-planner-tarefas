@@ -31,6 +31,26 @@ npm start
 
 (No PowerShell: `$env:PORT=4000; npm start`)
 
+## Testes
+
+Os testes automatizados ficam na pasta `tests` e utilizam **Mocha**, **Supertest** e **Chai**.
+
+### Instalar dependências de teste
+```bash
+cd tests
+npm install
+```
+
+### Rodar os testes de autenticação
+```bash
+npx mocha auth/auth.test.js
+```
+
+### Rodar todos os testes
+```bash
+npx mocha **/*.test.js
+```
+
 ## Usuário de teste (em memória)
 
 | Campo | Valor              |
