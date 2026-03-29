@@ -10,7 +10,12 @@
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["express", "planner", "jwt", "rest"],
+  "keywords": [
+    "express",
+    "planner",
+    "jwt",
+    "rest"
+  ],
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -18,5 +23,10 @@
     "jsonwebtoken": "^9.0.2",
     "swagger-ui-express": "^5.0.1",
     "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.7.5",
+    "supertest": "^7.2.2"
   }
 }
