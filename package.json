@@ -1,0 +1,22 @@
+{
+  "name": "api-planner-tarefas",
+  "version": "1.0.0",
+  "description": "API REST de planner pessoal com CRUD de tarefas e autenticação JWT",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["express", "planner", "jwt", "rest"],
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.6.1"
+  }
+}

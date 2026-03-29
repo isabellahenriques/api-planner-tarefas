@@ -1,0 +1,488 @@
+openapi: 3.0.3
+info:
+  title: API Planner — Tarefas
+  description: |
+    API REST para cadastro e gestão de tarefas (planner pessoal). Operações sobre tarefas exigem autenticação JWT (Bearer).
+    Usuário de teste em memória: `admin@planner.com` / `admin123`.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+
+tags:
+  - name: Autenticação
+  - name: Usuários
+  - name: Tarefas
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token obtido em POST /auth/login. Expira em 8 horas.
+
+  schemas:
+    Erro:
+      type: object
+      required: [erro, codigo]
+      properties:
+        erro:
+          type: string
+          description: Mensagem descritiva em português
+        codigo:
+          type: string
+          description: Código interno do erro
+
+    LoginRequest:
+      type: object
+      required: [email, senha]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@planner.com
+        senha:
+          type: string
+          format: password
+          example: admin123
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT
+        tipo:
+          type: string
+          example: Bearer
+        expiraEm:
+          type: string
+          example: 8h
+        usuario:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+
+    UsuarioCreateRequest:
+      type: object
+      required: [email, senha]
+      properties:
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+          minLength: 4
+          description: Obrigatória, mínimo 4 caracteres
+
+    UsuarioResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        criadoEm:
+          type: string
+          format: date-time
+
+    Tarefa:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        titulo:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        prioridade:
+          type: string
+          enum: [baixa, média, alta]
+        prazo:
+          type: string
+          format: date-time
+          description: Data e hora limite (ISO 8601)
+        status:
+          type: string
+          enum: [pendente, em andamento, concluída]
+        categoria:
+          type: string
+          nullable: true
+          enum: [trabalho, estudos, casa, pessoal, outro]
+        criadoEm:
+          type: string
+          format: date-time
+        atualizadoEm:
+          type: string
+          format: date-time
+
+    TarefaCreateRequest:
+      type: object
+      required: [titulo, prioridade, prazo]
+      properties:
+        titulo:
+          type: string
+          description: Obrigatório e único por usuário
+        descricao:
+          type: string
+          description: Opcional
+        prioridade:
+          type: string
+          enum: [baixa, média, alta]
+        prazo:
+          type: string
+          format: date-time
+          description: Não pode ser no passado
+        categoria:
+          type: string
+          enum: [trabalho, estudos, casa, pessoal, outro]
+          description: Opcional; se omitida ou vazia, fica null
+      description: |
+        O status na criação é sempre **pendente** (valores enviados para status são ignorados).
+
+    TarefaPatchRequest:
+      type: object
+      description: Pelo menos um campo deve ser enviado. Atualização parcial (PATCH).
+      properties:
+        titulo:
+          type: string
+        descricao:
+          type: string
+          nullable: true
+        prioridade:
+          type: string
+          enum: [baixa, média, alta]
+        prazo:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pendente, em andamento, concluída]
+        categoria:
+          type: string
+          nullable: true
+          enum: [trabalho, estudos, casa, pessoal, outro]
+
+  responses:
+    JsonInvalido:
+      description: Corpo da requisição não é JSON válido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+          example:
+            erro: O corpo da requisição não é um JSON válido.
+            codigo: JSON_INVALIDO
+
+paths:
+  /docs:
+    get:
+      summary: Documentação interativa (Swagger UI)
+      description: |
+        Renderiza a interface Swagger UI com a especificação OpenAPI desta API.
+        No navegador, acesse a mesma URL base com o caminho `/docs`.
+      responses:
+        '200':
+          description: Página HTML do Swagger UI
+
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Login e obtenção de JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: |
+            Email ou senha ausentes, ou corpo não é JSON válido (`codigo`: `VALIDATION_ERROR` ou `JSON_INVALIDO`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              examples:
+                validacao:
+                  value:
+                    erro: Email e senha são obrigatórios.
+                    codigo: VALIDATION_ERROR
+                jsonInvalido:
+                  value:
+                    erro: O corpo da requisição não é um JSON válido.
+                    codigo: JSON_INVALIDO
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              examples:
+                credenciais:
+                  value:
+                    erro: Credenciais inválidas.
+                    codigo: UNAUTHORIZED
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  /usuarios:
+    post:
+      tags: [Usuários]
+      summary: Cadastro de novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreateRequest'
+      responses:
+        '201':
+          description: Usuário criado (senha não é retornada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '409':
+          description: Email já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              examples:
+                duplicado:
+                  value:
+                    erro: Já existe um usuário cadastrado com este email.
+                    codigo: CONFLICT
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  /tarefas:
+    get:
+      tags: [Tarefas]
+      summary: Listar tarefas do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de tarefas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tarefa'
+        '401':
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+    post:
+      tags: [Tarefas]
+      summary: Criar tarefa
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TarefaCreateRequest'
+      responses:
+        '201':
+          description: Tarefa criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarefa'
+        '400':
+          description: Validação de negócio ou campos obrigatórios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '401':
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '409':
+          description: Título duplicado para o usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+  /tarefas/{id}:
+    get:
+      tags: [Tarefas]
+      summary: Obter uma tarefa por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tarefa encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarefa'
+        '401':
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '404':
+          description: Tarefa inexistente ou de outro usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+    patch:
+      tags: [Tarefas]
+      summary: Atualizar parcialmente uma tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TarefaPatchRequest'
+      responses:
+        '200':
+          description: Tarefa atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarefa'
+        '400':
+          description: Validação ou corpo sem campos permitidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '401':
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '404':
+          description: Tarefa inexistente ou de outro usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '409':
+          description: Conflito de título
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+    delete:
+      tags: [Tarefas]
+      summary: Excluir tarefa
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tarefa excluída (sem corpo)
+        '401':
+          description: Token ausente, inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '404':
+          description: Tarefa inexistente ou de outro usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+        '500':
+          description: Erro interno
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
