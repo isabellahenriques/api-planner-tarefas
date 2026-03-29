@@ -1,20 +1,26 @@
 # API Planner — Tarefas
 
-API REST em **Node.js** e **Express** para cadastro e gestão de tarefas (planner pessoal). Inclui **CRUD completo** de tarefas, **cadastro de usuários**, **autenticação JWT** (token com expiração de **8 horas**) e armazenamento **em memória** (arrays no código).
+API REST em Node.js e Express para cadastro e gestão de tarefas pessoais (planner). Desenvolvida como parte do **Desafio #4 da Mentoria M2.0**.
 
-A documentação interativa está em **Swagger UI** em `GET /docs`.
+Inclui CRUD completo de tarefas, cadastro de usuários, autenticação JWT com expiração de 8 horas e armazenamento em memória.
+
+A documentação interativa está disponível via Swagger UI em `GET /docs`.
+
+---
 
 ## Requisitos
 
 - [Node.js](https://nodejs.org/) 18 ou superior
 
-## Instalação
+---
 
-No diretório do projeto:
+## Instalação
 
 ```bash
 npm install
 ```
+
+---
 
 ## Como rodar
 
@@ -22,61 +28,40 @@ npm install
 npm start
 ```
 
-Por padrão o servidor sobe em `http://localhost:3000`. Para outra porta:
+O servidor sobe em `http://localhost:3000` por padrão.
+
+Para rodar em outra porta:
 
 ```bash
-set PORT=4000
-npm start
+# CMD
+set PORT=4000 && npm start
+
+# PowerShell
+$env:PORT=4000; npm start
 ```
 
-(No PowerShell: `$env:PORT=4000; npm start`)
+---
 
-## Testes
+## Usuário de teste
 
-Os testes automatizados ficam na pasta `tests` e utilizam **Mocha**, **Supertest** e **Chai**.
-
-### Instalar dependências de teste
-```bash
-cd tests
-npm install
-```
-
-### Rodar os testes de autenticação
-```bash
-npx mocha auth/auth.test.js
-```
-
-### Rodar os testes de usuários
-```bash
-npx mocha usuarios/usuarios.test.js
-```
-
-### Rodar os testes de tarefas
-```bash
-npx mocha tarefas/tarefas.test.js
-```
-
-### Rodar todos os testes
-```bash
-npx mocha **/*.test.js
-```
-
-## Usuário de teste (em memória)
-
-| Campo | Valor              |
-|-------|--------------------|
+| Campo | Valor |
+|-------|-------|
 | Email | `admin@planner.com` |
-| Senha | `admin123`         |
+| Senha | `admin123` |
+
+---
 
 ## Como usar a API
 
-### 1. Documentação (Swagger UI)
+### 1. Acesse a documentação Swagger
 
-Abra no navegador: [http://localhost:3000/docs](http://localhost:3000/docs)
+```
+http://localhost:3000/docs
+```
 
-Lá você pode ver todos os endpoints, modelos de request/response e testar chamadas (use **Authorize** com o token JWT após o login).
+Lá você encontra todos os endpoints, modelos de request/response e pode testar as chamadas diretamente. Após o login, clique em **Authorize** e cole o token JWT.
 
-### 2. Obter token JWT
+### 2. Faça login e obtenha o token
 
 ```http
 POST /auth/login
@@ -88,9 +73,7 @@ Content-Type: application/json
 }
 ```
 
-Resposta (exemplo): `token`, `tipo`, `expiraEm`, `usuario`.
-
-### 3. Cadastrar novo usuário
+### 3. Cadastre um novo usuário
 
 ```http
 POST /usuarios
@@ -102,27 +85,132 @@ Content-Type: application/json
 }
 ```
 
-### 4. Tarefas (requer cabeçalho `Authorization`)
+### 4. Use os endpoints de tarefas
 
-Todas as rotas abaixo exigem:
+Todas as rotas abaixo exigem o cabeçalho:
 
 ```http
 Authorization: Bearer <seu_token_jwt>
 ```
 
-| Método | Caminho        | Descrição              |
-|--------|----------------|------------------------|
-| GET    | `/tarefas`     | Listar suas tarefas    |
-| POST   | `/tarefas`     | Criar tarefa           |
-| GET    | `/tarefas/:id` | Obter uma tarefa       |
-| PATCH  | `/tarefas/:id` | Atualizar parcialmente |
-| DELETE | `/tarefas/:id` | Excluir                |
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| GET | `/tarefas` | Listar tarefas |
+| POST | `/tarefas` | Criar tarefa |
+| GET | `/tarefas/:id` | Buscar tarefa por ID |
+| PATCH | `/tarefas/:id` | Atualizar parcialmente |
+| DELETE | `/tarefas/:id` | Excluir tarefa |
 
-**Campos da tarefa:** título (obrigatório, único por usuário), descrição (opcional), prioridade (`baixa`, `média`, `alta`), prazo (ISO 8601, não pode ser no passado), status (na criação sempre `pendente`), categoria opcional (`trabalho`, `estudos`, `casa`, `pessoal`, `outro`). IDs e datas de criação/atualização são gerados automaticamente.
+**Campos da tarefa:**
 
-### Exemplo com curl (PowerShell)
+| Campo | Obrigatório | Descrição |
+|-------|-------------|-----------|
+| `titulo` | Sim | Único por usuário |
+| `prioridade` | Sim | `baixa`, `media` ou `alta` |
+| `prazo` | Sim | ISO 8601, deve ser data futura |
+| `descricao` | Não | Texto livre |
+| `status` | Automático | Sempre inicia como `pendente` |
+| `categoria` | Não | `trabalho`, `estudos`, `casa`, `pessoal` ou `outro` |
 
-Login e gravação do token em variável:
+---
+
+## Testes automatizados
+
+Os testes ficam na pasta `tests` e utilizam **Mocha**, **Supertest** e **Chai**.
+
+### Instalar dependências
+
+```bash
+cd tests
+npm install
+```
+
+### Rodar os testes
+
+```bash
+# Autenticação
+npx mocha auth/auth.test.js
+
+# Usuários
+npx mocha usuarios/usuarios.test.js
+
+# Tarefas
+npx mocha tarefas/tarefas.test.js
+
+# Todos os testes
+npx mocha **/*.test.js
+```
+
+### Cenários cobertos
+
+| Cenário | Status esperado |
+|---------|-----------------|
+| **Autenticação** | |
+| Login com sucesso | 200 |
+| Login com senha errada | 401 |
+| Login sem email e senha | 400 |
+| **Usuários** | |
+| Cadastrar com sucesso | 201 |
+| Cadastrar com email já existente | 409 |
+| Cadastrar sem campos obrigatórios | 400 |
+| **Tarefas — POST** | |
+| Criar com sucesso | 201 |
+| Criar sem título | 400 |
+| Criar com prazo no passado | 400 |
+| Criar com prioridade inválida | 400 |
+| Criar sem autenticação | 401 |
+| Criar com título duplicado | 409 |
+| **Tarefas — GET** | |
+| Listar com sucesso | 200 |
+| Listar sem autenticação | 401 |
+| **Tarefas — PATCH** | |
+| Atualizar com sucesso | 200 |
+| Atualizar com prazo no passado | 400 |
+| Atualizar sem autenticação | 401 |
+| **Tarefas — DELETE** | |
+| Excluir com sucesso | 204 |
+| Excluir sem autenticação | 401 |
+| Excluir tarefa inexistente | 404 |
+
+---
+
+## Estrutura do projeto
+
+```
+api-planner-tarefas/
+├── src/
+│   ├── controllers/    — entrada HTTP e respostas
+│   ├── services/       — regras de negócio e JWT
+│   ├── routes/         — definição das rotas
+│   ├── model/          — constantes e armazenamento em memória
+│   ├── middleware/     — autenticação JWT
+│   ├── app.js
+│   └── index.js
+├── resources/
+│   └── openapi.yaml    — especificação OpenAPI (Swagger)
+├── tests/
+│   ├── auth/
+│   ├── usuarios/
+│   └── tarefas/
+├── .gitignore
+├── package.json
+└── README.md
+```
+
+---
+
+## Variáveis de ambiente
+
+| Variável | Descrição | Padrão |
+|----------|-----------|--------|
+| `PORT` | Porta HTTP | `3000` |
+| `JWT_SECRET` | Segredo para assinatura do JWT | — |
+
+---
+
+## Exemplo com PowerShell
+
+Login e armazenamento do token:
 
 ```powershell
 $r = Invoke-RestMethod -Uri http://localhost:3000/auth/login -Method POST -ContentType "application/json" -Body '{"email":"admin@planner.com","senha":"admin123"}'
@@ -142,23 +230,9 @@ $body = @{
 Invoke-RestMethod -Uri http://localhost:3000/tarefas -Method POST -Headers @{ Authorization = "Bearer $token" } -ContentType "application/json" -Body $body
 ```
 
-## Estrutura do projeto
+> Dica: no PowerShell, envie o JSON em UTF-8 quando usar caracteres com acento para evitar erros de encoding.
 
-- `src/routes` — definição das rotas
-- `src/controllers` — entrada HTTP e respostas
-- `src/services` — regras de negócio e JWT
-- `src/model` — constantes e armazenamento em memória
-- `src/middleware` — autenticação JWT
-- `resources/openapi.yaml` — especificação OpenAPI (Swagger)
-
-**Dica:** em clientes como o PowerShell, envie o corpo JSON em **UTF-8** quando usar acentos (por exemplo `média` em `prioridade`), para não corromper caracteres.
-
-## Variáveis de ambiente
-
-| Variável   | Descrição                                      |
-|------------|------------------------------------------------|
-| `PORT`     | Porta HTTP (padrão `3000`)                     |
-| `JWT_SECRET` | Segredo para assinatura do JWT (use um valor forte em produção) |
+---
 
 ## Licença
 
