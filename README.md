@@ -51,6 +51,11 @@ npx mocha auth/auth.test.js
 npx mocha usuarios/usuarios.test.js
 ```
 
+### Rodar os testes de tarefas
+```bash
+npx mocha tarefas/tarefas.test.js
+```
+
 ### Rodar todos os testes
 ```bash
 npx mocha **/*.test.js
