@@ -46,6 +46,11 @@ npm install
 npx mocha auth/auth.test.js
 ```
 
+### Rodar os testes de usuários
+```bash
+npx mocha usuarios/usuarios.test.js
+```
+
 ### Rodar todos os testes
 ```bash
 npx mocha **/*.test.js
