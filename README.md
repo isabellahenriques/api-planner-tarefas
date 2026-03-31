@@ -106,7 +106,7 @@ Authorization: Bearer <seu_token_jwt>
 | Campo | Obrigatório | Descrição |
 |-------|-------------|-----------|
 | `titulo` | Sim | Único por usuário |
-| `prioridade` | Sim | `baixa`, `media` ou `alta` |
+| `prioridade` | Sim | `baixa`, `média` ou `alta` |
 | `prazo` | Sim | ISO 8601, deve ser data futura |
 | `descricao` | Não | Texto livre |
 | `status` | Automático | Sempre inicia como `pendente` |
@@ -174,6 +174,49 @@ npx mocha **/*.test.js
 
 ---
 
+## Testes de performance
+
+Os testes de performance ficam na pasta `tests/performance` e utilizam **k6**.
+
+### Instalar o k6
+
+```bash
+winget install k6 --source winget
+```
+
+### Rodar os testes de performance
+
+```bash
+# Login
+k6 run tests/performance/loginPerformance.test.js
+
+# Criar tarefa
+k6 run tests/performance/criarTarefaPerformance.test.js
+
+# Listar tarefas
+k6 run tests/performance/listarTarefasPerformance.test.js
+
+# Atualizar tarefa
+k6 run tests/performance/atualizarTarefaPerformance.test.js
+
+# Excluir tarefa
+k6 run tests/performance/excluirTarefaPerformance.test.js
+```
+
+### Resultados obtidos
+
+| Teste | Checks | Falhas | Tempo médio |
+|-------|--------|--------|-------------|
+| Login | 418/418 | 0% | 231ms |
+| Criar tarefa | 320/320 | 0% | 308ms |
+| Listar tarefas | 362/362 | 0% | 210ms |
+| Atualizar tarefa | 420/420 | 0% | 286ms |
+| Excluir tarefa | 258/258 | 0% | 338ms |
+
+Configuração: **10 usuários simultâneos** por **30 segundos** com thresholds de `p(90)<3000ms` e `max<5000ms`.
+
+---
+
 ## Estrutura do projeto
 
 ```
@@ -191,7 +234,10 @@ api-planner-tarefas/
 ├── tests/
 │   ├── auth/
 │   ├── usuarios/
-│   └── tarefas/
+│   ├── tarefas/
+│   ├── performance/
+│   ├── helpers/
+│   └── utils/
 ├── .gitignore
 ├── package.json
 └── README.md
