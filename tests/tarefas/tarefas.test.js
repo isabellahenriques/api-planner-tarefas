@@ -259,6 +259,45 @@ describe('Tarefas', () => {
             expect(res.status).to.equal(404);
         });
 
+        // Cenário de erro — excluir tarefa de outro usuário
+        it('deve rejeitar exclusão de tarefa de outro usuário', async () => {
+            // Criar outro usuário
+            const userRes = await request(app).post('/usuarios').send({
+                email: 'outro@planner.com',
+                senha: 'senha123'
+            });
+            expect(userRes.status).to.equal(201);
+
+            // Login como outro usuário
+            const loginRes = await request(app).post('/auth/login').send({
+                email: 'outro@planner.com',
+                senha: 'senha123'
+            });
+            expect(loginRes.status).to.equal(200);
+            const outroToken = loginRes.body.token;
+
+            // Criar tarefa para o outro usuário
+            const taskRes = await request(app)
+                .post('/tarefas')
+                .set('Authorization', `Bearer ${outroToken}`)
+                .send({
+                    titulo: 'Tarefa de outro usuário',
+                    prioridade: 'baixa',
+                    prazo: '2027-01-01T10:00:00.000Z'
+                });
+            expect(taskRes.status).to.equal(201);
+            const outroTarefaId = taskRes.body.id;
+
+            // Tentar excluir com o token original
+            const res = await request(app)
+                .delete(`/tarefas/${outroTarefaId}`)
+                .set('Authorization', `Bearer ${token}`);
+            console.log('Status recebido:', res.status);
+            console.log('Body recebido:', res.body);
+
+            expect(res.status).to.equal(404);
+        });
+
         // Cenário de sucesso — excluir tarefa com sucesso
         it('deve excluir uma tarefa com sucesso', async () => {
             console.log('Payload enviado: nenhum (DELETE)');
